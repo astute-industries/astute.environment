@@ -40,10 +40,10 @@ function compile(temp:string, currentPkg:PACKAGE){
                 new Promise<any>(res=>fs.rename(path.join(temp,"types"),path.join(temp,"source"),res)),
                 new Promise<any>(res=>exec("npm pack",{cwd:temp},res)),
                 new Promise<any>(res=>fs.mkdir("release",res)),
-                new Promise<any>(res=>fs.rename(path.join(temp,fn+".tgz"),path.join("..","release",currentPkg.name+".dev.tgz"),res)),
+                new Promise<any>(res=>fs.rename(path.join(temp,fn+".tgz"),path.join(temp,"..","release",currentPkg.name+".dev.tgz"),res)),
                 new Promise<any>(res=>fs.rm(path.join(temp,"source"),{recursive:true},res)),
                 new Promise<any>(res=>exec("npm pack",{cwd:temp},res)),
-                new Promise<any>(res=>fs.rename(path.join(temp,fn+".tgz"),path.join("..","release",currentPkg.name+".tgz"),res)),
+                new Promise<any>(res=>fs.rename(path.join(temp,fn+".tgz"),path.join(temp, "..","release",currentPkg.name+".tgz"),res)),
                 new Promise<any>(res=>fs.rm(temp,{recursive:true},res)),
             ]
             promises.map(x=>()=>x).reduce((p:Promise<void>,c)=>new Promise(res=>{
