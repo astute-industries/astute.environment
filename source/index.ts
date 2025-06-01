@@ -6,11 +6,6 @@ import fs from "fs"
 import os from "os"
 import {spawn} from "child_process"
 
-function cmd(c:string){
-    return (os.platform()==="win32")?`${c}.cmd`:c;
-}
-const [,,...argv]=process.argv;
-const VALID_COMMAND = ["install","list","help"] as const;
 type ValidCommand = typeof VALID_COMMAND[number]
 
 type CONFIG ={
@@ -34,6 +29,13 @@ type ARGUMENT = {
     defaultValue?:string,
     field?:keyof CONFIG;
 }
+
+function cmd(c:string){
+    return (os.platform()==="win32")?`${c}.cmd`:c;
+}
+const [,,...argv]=process.argv;
+const VALID_COMMAND = ["install","list","help"] as const;
+
 
 var argu:Partial<{[key in ValidCommand]: ARGUMENT[]}>={};
 
