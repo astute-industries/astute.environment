@@ -5,10 +5,11 @@ import path from "path"
 import fs from "fs"
 import os from "os"
 import { spawnProcess } from "./utility";
+import { ARGUMENT, BASE_CONFIG } from "./definition";
 
 type ValidCommand = typeof VALID_COMMAND[number]
 
-type CONFIG ={
+interface CONFIG extends BASE_CONFIG<ValidCommand>{
     token: string,
     host:string,
     owner:string,
@@ -16,19 +17,12 @@ type CONFIG ={
     tag:string
     argv:string[],
     command:ValidCommand
-    clean?:boolean
-    all?:boolean
+    clean:boolean
+    all:boolean
 }
 type ASSETINFO =  {releaseName:string, downLoad:string, assetName:string}
 
-type ARGUMENT = {
-    name:string,
-    argv?:string|[string]
-    desc?:string,
-    alias?:string,
-    defaultValue?:string,
-    field?:keyof CONFIG;
-}
+
 
 function cmd(c:string){
     return (os.platform()==="win32")?`${c}.cmd`:c;
@@ -37,7 +31,7 @@ const [,,...argv]=process.argv;
 const VALID_COMMAND = ["install","list","help"] as const;
 
 
-var argu:Partial<{[key in ValidCommand]: ARGUMENT[]}>={};
+var argu:Partial<{[key in ValidCommand]: ARGUMENT<CONFIG>[]}>={};
 
 argu["install"] =[
     {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:"PST TToken", defaultValue:process.env.ASTUTE_TOKEN,field:"token" },
