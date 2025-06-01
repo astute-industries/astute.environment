@@ -4,7 +4,7 @@ import fetch, { Headers } from "node-fetch"
 import path from "path"
 import fs from "fs"
 import os from "os"
-import {spawn} from "child_process"
+import { spawnProcess } from "./utility";
 
 function cmd(c:string){
     return (os.platform()==="win32")?`${c}.cmd`:c;
@@ -223,21 +223,7 @@ function getAssetList(config:CONFIG,repo?:string):Promise<{[key:string]:ASSETINF
         });
     });
 }
-function spawnProcess(command:string[], config?:{cwd?:string}){
-    return new Promise<void>((res,rej)=>{
-        const action = command.splice(0,1);
-        const npm = spawn(action[0],command);
-        console.log("executing ",action, command)
-        npm.stderr.on("data",(m=>{
-            console.log(m.toString());
-        }))
-        npm.on("close",(code)=>{
-            console.log("EXIT CODE = "+code);
-            if(code)return rej(code);
-            res();
-        })
-    });
-}
+
 function getAsset(config:CONFIG,meta: ASSETINFO){
     const h = new Headers({
         accept:"application/octet-stream", "X-GitHub-Api-Version":"2022-11-28",
