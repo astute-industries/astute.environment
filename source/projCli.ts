@@ -30,10 +30,10 @@ function getFolders(working:string, projOnly?:boolean, skip?:string[]){
                 const d = path.join(working,u);
                 fs.stat(d,(err, stat)=>{
                     if(stat?.isDirectory()){
-                        return (projOnly ? fs.readFile(path.join(d,"package.json"),{encoding:"utf-8"},(err,d)=>{
+                        return (projOnly ? fs.readFile(path.join(d,"package.json"),{encoding:"utf-8"},(err,jsd)=>{
                             if(err)return x("");
                             try{
-                                JSON.parse(d);
+                                JSON.parse(jsd);
                                 x(d);
                             }catch(ex){
                                 x("");
