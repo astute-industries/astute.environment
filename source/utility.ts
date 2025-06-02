@@ -9,7 +9,7 @@ export function spawnProcess(command:string[], config?:{cwd?:string}){
         const action = command.splice(0,1);
         const env = {cwd:config?.cwd, env:process.env};
         const npm = os.platform()==="win32"?spawn("cmd.exe",["/c",...action,...command],env)
-            : spawn(command[0],command.slice(1),env);
+            : spawn(action[0],command.slice(1),env);
         console.log("executing ",action, command)
         npm.stderr.on("data",(m=>{
             console.log(m.toString());
