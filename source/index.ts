@@ -137,7 +137,7 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
                     }
                     fs.writeFile(path.join(config.save||temp,meta.assetName),Buffer.from(k),(err)=>{
                         err && rej(err);
-                        res(path.resolve(config.save||temp,meta.assetName));
+                        res(path.join(config.save||temp,meta.assetName));
                     })
                 });
             }).catch(rej);
@@ -198,7 +198,7 @@ function processArgv(config:CONFIG|null){
                 }
                 const seq = rep.map(x=>()=>new Promise<string|null>(rr=>{
                     getAsset(config,x[1]).then(lib=>{
-                        rr(lib?.length?path.resolve(lib):null);
+                        rr(lib?.length?(lib):null);
                     })
                 }))
                 seq.reduce((p:Promise<string[]>,c)=>new Promise((res,j)=>{
