@@ -6,6 +6,7 @@ import fs from "fs"
 import os from "os"
 import { spawnProcess, getConfiguration } from "./utility";
 import { ARGUMENT, BASE_CONFIG } from "./definition";
+import { randomUUID } from "crypto";
 
 const VALID_COMMAND = ["install","list","help"] as const;
 type ValidCommand = typeof VALID_COMMAND[number]
@@ -13,8 +14,8 @@ type ValidCommand = typeof VALID_COMMAND[number]
 
 
 
-const StrProps = ["token","host","owner","repo","tag" ] as const
-const BoolProps= ["clean","all"] as const
+const StrProps = ["token","host","owner","repo","tag" ,"save"] as const
+const BoolProps= ["all"] as const
 
 type STR_PROPS = typeof StrProps[number];
 type BOOL_PROPS= typeof BoolProps[number];
@@ -47,7 +48,7 @@ allAction["install"] =[
     {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:"organization name", defaultValue:"astute-industries",field:"owner"},
     {name:"-repo",alias:"-r", desc:"Asset repository",argv:"repository name", defaultValue:"astute.rmf.sdks",field:"repo"},
     {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:"deployment name", defaultValue:"development-build",field:"tag"},
-    {name:"-clean",alias:"-c",desc:"remove all download upon installation complete",defaultValue:"false",field:"clean"},
+    {name:"-save",alias:"-s",desc:"remove all download upon installation complete",argv:"location where binary is stored",defaultValue:"false",field:"save"},
     {name:"", desc:"list of asset to be installed", argv:["asset name to be deployed"],field:"argv"},
     {name:"-help",alias:"-h",desc:"Showing help"}
 ]
@@ -122,20 +123,21 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
         accept:"application/octet-stream", "X-GitHub-Api-Version":"2022-11-28",
         'Authorization': `Bearer ${config.token}`,"content-type":"application/json"
     });
+    const temp = path.join(".","@"+randomUUID().toString());
     return new Promise<string>((res,rej)=>{
         fetch(meta.downLoad,{headers:h,method:"get"}).then(x=>{
             if(Math.floor(x.status/100)!==2)return rej("error downloading");
             console.log("SYTATUS",x.status)
             x.arrayBuffer().then(k=>{
                 if(!k?.byteLength)return rej("unable to download")
-                fs.mkdir("release",{recursive:true},()=>{
+                fs.mkdir(config.save || temp,{recursive:true},()=>{
                     console.log("installing ",meta.assetName);
                     if(meta.assetName.endsWith(".dev.tgz")){
                         meta.assetName = meta.assetName.substring(0,meta.assetName.length-8)+".tgz";
                     }
-                    fs.writeFile(path.join(".","release",meta.assetName),Buffer.from(k),(err)=>{
+                    fs.writeFile(path.join(config.save||temp,meta.assetName),Buffer.from(k),(err)=>{
                         err && rej(err);
-                        res(path.resolve(".","release",meta.assetName));
+                        res(path.resolve(config.save||temp,meta.assetName));
                     })
                 });
             }).catch(rej);
@@ -145,6 +147,7 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
 
 function processArgv(config:CONFIG|null){
     if(config===null)return;
+    
     switch(config.command){
         case "list":return (config.all? Object.values(dict) : [config.repo]).map(x=>()=>new Promise<{[key:string]:ASSETINFO}>(res=>{
             getAssetList(config,x).then(resp=>{
@@ -193,32 +196,32 @@ function processArgv(config:CONFIG|null){
                     console.log(["?dev","?prod",...Object.keys(resp)].join(", "));
                     return;
                 }
-                const seq = rep.map(x=>()=>new Promise<string>(rr=>{
+                const seq = rep.map(x=>()=>new Promise<string|null>(rr=>{
                     getAsset(config,x[1]).then(lib=>{
-                        rr(lib);
+                        rr(lib?.length?path.resolve(lib):null);
                     })
                 }))
                 seq.reduce((p:Promise<string[]>,c)=>new Promise((res,j)=>{
                     p.then((d)=>{
                         c().then(a=>{
-                            d.push(a);
+                            if(a!==null)d.push(a);
                             res(d);
                         }).catch(j); 
                     }).catch(j)
                 }),Promise.resolve([])).then((libs)=>{
                     libs.map(lib=>()=>new Promise<void>(res=>{
-                        spawnProcess([cmd("npm"),"install",lib]).finally(res);
+                        spawnProcess([cmd("npm"),"install",lib]).finally(()=>{
+                            if(config.save===null){
+                                return fs.rm(lib,()=>res());
+                            }
+                            res();
+                        });
                     })).reduce((p,c)=>new Promise<void>((x)=>{
                         p.finally(()=>{
                             c().finally(x);
                         })
                     }),Promise.resolve()).finally(()=>{
-                        if(config.clean){
-                            console.log("cleaning up")
-                            return fs.rm("./release",{recursive:true},()=>{
-                                console.log("installed");
-                            })
-                        }
+                        
                         console.log("installed");
                     });
                 })
@@ -242,7 +245,7 @@ try{
         repo: 'astute.rmf.sdks',
         tag: 'development-build',
         token:"",
-        clean:false,
+        save:"",
         all:false
     }
     

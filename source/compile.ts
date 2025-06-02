@@ -75,7 +75,6 @@ function compile(temp:string, currentPkg:PACKAGE){
         return p;
     },currentPkg.dependencies);
     const fn = currentPkg.name+"-"+currentPkg.version;
-    const cur=process.cwd();
     return new Promise<void>(Res=>{
         fs.mkdir(BASE,()=>{
             fs.rm(path.join(temp,".github"),{recursive:true},()=>{
