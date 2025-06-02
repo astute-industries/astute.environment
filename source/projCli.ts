@@ -51,15 +51,15 @@ function getFolders(working:string, projOnly?:boolean, skip?:string[]){
 }
 
 getFolders(working,projOnly,skip).then(dir=>{
-    const promise = quick ? new Promise<number>(res=>{
-        Promise.all(dir.map(x=>spawnProcess(action,{cwd:x}))).then(value=>{
+    (quick ? new Promise<number>(res=>{
+        Promise.all(dir.map(x=>spawnProcess(action.slice(),{cwd:x}))).then(value=>{
             res(Math.max(...value));
         });
-    }) : dir.map(x=>()=>spawnProcess(action,{cwd:x})).reduce((p:Promise<number>,c)=>new Promise(res=>{
+    }) : dir.map(x=>()=>spawnProcess(action.slice(),{cwd:x})).reduce((p:Promise<number>,c)=>new Promise(res=>{
         p.then(code=>{
             return code ? res(code) :c().then(res);
         }).catch(()=>res(1));
-    }),Promise.resolve(0)).then(code=>{
+    }),Promise.resolve(0))).then(code=>{
         if(code) console.log("Error code is received",code);
         process.exit(error ? code : 0);
     })
