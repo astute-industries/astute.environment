@@ -7,13 +7,10 @@ import { ARGUMENT, BASE_CONFIG } from "./definition";
 export function spawnProcess(command:string[], config?:{cwd?:string}){
     return new Promise<number>((res)=>{
         const action = command.splice(0,1);
-        const env = {cwd:config?.cwd, env:process.env,stdio:"pipe" as const};
+        const env = {cwd:config?.cwd, env:process.env,stdio:"inherit" as const};
         const npm = os.platform()==="win32"?spawn("cmd.exe",["/c",...action,...command])
             : spawn(action[0],command,env);
         console.log("executing ",action, command)
-        npm.stderr.on("data",(m=>{
-            console.log(m.toString());
-        }))
         npm.on("close",(code)=>{
             console.log("EXIT CODE = "+code);
             res(code===null?-1:code);
