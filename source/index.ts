@@ -314,7 +314,7 @@ function processArgv(config:CONFIG|null){
                     }).catch(j)
                 }),Promise.resolve([])).then((libs)=>{
                     libs.map(lib=>()=>new Promise<void>(res=>{
-                        spawnProcess([cmd("npm"),"install",lib]).finally(res);
+                        spawnProcess([cmd("npm"),"install","./"+lib]).finally(res);
                     })).reduce((p,c)=>new Promise<void>((x)=>{
                         p.finally(()=>{
                             c().finally(x);
