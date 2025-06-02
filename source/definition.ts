@@ -14,5 +14,6 @@ export type ARGUMENT<T> = {
     field?:keyof T;
 }
 
-export type BASE_CONFIG<CMD extends string | "help">  = {[key:string]:string[]|string|boolean|CMD} 
+export type BASE_CONFIG<CMD extends string | "help", STR extends string, BOOL extends string >  = //{[key:string]:string[]|string|boolean|CMD} 
+     {argv:string[]} & {command:CMD} & {[key in  STR ]:string} & {[key in BOOL]:boolean}
     

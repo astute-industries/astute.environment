@@ -45,17 +45,16 @@ export function copyFolder(root:string,target:string,rel:string){
     })
 }
 
-function getConfiguration<S extends string,T extends BASE_CONFIG<S>>(command:S|null, allCommand:{[key:string]:ARGUMENT<T>[]}, defaultConfig:T , ...argv:string[]):T|null{
+export function getConfiguration<S extends string, STR extends string,BOOL extends string, T extends BASE_CONFIG<S,STR,BOOL>>(command:S|null, allCommand:{[key:string]:ARGUMENT<T>[]}, defaultConfig:T , ...argv:string[]):T|null{
     var argvStart = 0;
-    const argu = allCommand;
     if(command===null){
         console.log("Astute Environment Setup");
-        console.log("npm exec setup -- [ "+ Object.keys(argu).join(" | ")+" ]" );
+        console.log("npm exec setup -- [ "+ Object.keys(allCommand).join(" | ")+" ]" );
         return null;
     }
 
     if(argvStart)argv=argv.slice(1);
-    const action = argu[command]||[];
+    const action = allCommand[command]||[];
     const help  = action.filter(x=>x.alias==="-h")||[];
     if(help.length){
         if(argv[0]===help[0].name || (argv[0]||"")===help[0].alias){
@@ -70,13 +69,13 @@ function getConfiguration<S extends string,T extends BASE_CONFIG<S>>(command:S|n
             console.log("npm exec setup -- "+command + " [ "+ [cmd1,cmd2,...(cmd3?[`...inst`]:[])].join(" | ")+  " ]" );
 
             action.forEach(x=>{
-                var keyy = ("  "+x.name);
+                var key = ("  "+x.name);
                 if(x.name.length===0)return;
                 if(x.alias){
-                    console.log(keyy.padStart(arr)+" : "+(x.desc||"-"));
-                    keyy = x.alias.padStart(arr," ");
+                    console.log(key.padStart(arr)+" : "+(x.desc||"-"));
+                    key = x.alias.padStart(arr," ");
                 }
-                console.log(keyy.padStart(arr)+" : "+(x.desc||"-"));
+                console.log(key.padStart(arr)+" : "+(x.desc||"-"));
                 if(x.argv?.length){
                     const cmt = Array.isArray(x.argv)?x.argv[0]:x.argv;
                     console.log(`${x.name.substring(1)}.inst`.padStart(arr)+" : "+cmt);
@@ -113,11 +112,12 @@ function getConfiguration<S extends string,T extends BASE_CONFIG<S>>(command:S|n
             
             return p;
         }
+        var P : any = p;
         argvStart = i+1;
         
-        if(x.field==="clean" || x.field==="all"){
+        if(!x.argv){
             console.log("................",x.field);
-            p[x.field] = true;
+            P[x.field]= true;
             return p;
         }
         var txt = all[i+1];
@@ -133,11 +133,11 @@ function getConfiguration<S extends string,T extends BASE_CONFIG<S>>(command:S|n
         if(x.argv?.length)argvStart = i+2;
         const m = x.field;
 
-        p[m]=txt;
+        P[m]=txt;
         return p;
     },defaultConfig);
     var p = argv.slice(argvStart);
-    cfg.argv = p;
-    return cfg;
+    defaultConfig.argv = p;
+    return defaultConfig;
 
 }
