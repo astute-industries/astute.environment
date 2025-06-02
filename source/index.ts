@@ -135,9 +135,9 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
                     if(meta.assetName.endsWith(".dev.tgz")){
                         meta.assetName = meta.assetName.substring(0,meta.assetName.length-8)+".tgz";
                     }
-                    fs.writeFile(path.join(config.save||temp,meta.assetName),Buffer.from(k),(err)=>{
+                    fs.writeFile(path.join(config.save||temp,meta.assetName.toLowerCase()),Buffer.from(k),(err)=>{
                         err && rej(err);
-                        res(path.join(config.save||temp,meta.assetName));
+                        res(path.join(config.save||temp,meta.assetName).toLowerCase());
                     })
                 });
             }).catch(rej);
