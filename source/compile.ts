@@ -67,13 +67,18 @@ function compile(temp:string, currentPkg:PACKAGE){
     
     const BASE = config?.output||"../release";
     console.log("NC",temp)
-    currentPkg.dependencies = currentPkg.dependencies||{};
-    currentPkg.dependencies =  Object.entries(currentPkg.dependencies).reduce((p,c)=>{
+    currentPkg.dependencies =  Object.entries(currentPkg.dependencies||{}).reduce((p,c)=>{
         if(c[1].startsWith("file:../")){
             p[c[0]]="file:./"+c[1].substring(8)+".tgz";
         }
         return p;
-    },currentPkg.dependencies);
+    },currentPkg.dependencies||{});
+    currentPkg.peerDependencies =  Object.entries(currentPkg.peerDependencies||{}).reduce((p,c)=>{
+        if(c[1].startsWith("file:../")){
+            p[c[0]]="file:./"+c[1].substring(8)+".tgz";
+        }
+        return p;
+    },currentPkg.peerDependencies||{});
     const fn = currentPkg.name+"-"+currentPkg.version;
     return new Promise<void>(Res=>{
         fs.mkdir(BASE,()=>{
