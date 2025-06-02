@@ -4,11 +4,23 @@ import fetch, { Headers } from "node-fetch"
 import path from "path"
 import fs from "fs"
 import os from "os"
-import { spawnProcess } from "./utility";
+import { spawnProcess, getConfiguration } from "./utility";
+import { ARGUMENT, BASE_CONFIG } from "./definition";
+import { randomUUID } from "crypto";
 
+const VALID_COMMAND = ["install","list","help"] as const;
 type ValidCommand = typeof VALID_COMMAND[number]
 
-type CONFIG ={
+
+
+
+const StrProps = ["token","host","owner","repo","tag" ,"save"] as const
+const BoolProps= ["all"] as const
+
+type STR_PROPS = typeof StrProps[number];
+type BOOL_PROPS= typeof BoolProps[number];
+
+type CONFIG = BASE_CONFIG<ValidCommand,STR_PROPS,BOOL_PROPS>/*{
     token: string,
     host:string,
     owner:string,
@@ -16,39 +28,31 @@ type CONFIG ={
     tag:string
     argv:string[],
     command:ValidCommand
-    clean?:boolean
-    all?:boolean
-}
+    clean:boolean
+    all:boolean
+}*/
 type ASSETINFO =  {releaseName:string, downLoad:string, assetName:string}
 
-type ARGUMENT = {
-    name:string,
-    argv?:string|[string]
-    desc?:string,
-    alias?:string,
-    defaultValue?:string,
-    field?:keyof CONFIG;
-}
+
 
 function cmd(c:string){
     return (os.platform()==="win32")?`${c}.cmd`:c;
 }
-const [,,...argv]=process.argv;
-const VALID_COMMAND = ["install","list","help"] as const;
 
 
-var argu:Partial<{[key in ValidCommand]: ARGUMENT[]}>={};
 
-argu["install"] =[
+var allAction:Partial<{[key in ValidCommand]: ARGUMENT<CONFIG>[]}>={};
+
+allAction["install"] =[
     {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:"PST TToken", defaultValue:process.env.ASTUTE_TOKEN,field:"token" },
     {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:"organization name", defaultValue:"astute-industries",field:"owner"},
     {name:"-repo",alias:"-r", desc:"Asset repository",argv:"repository name", defaultValue:"astute.rmf.sdks",field:"repo"},
     {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:"deployment name", defaultValue:"development-build",field:"tag"},
-    {name:"-clean",alias:"-c",desc:"remove all download upon installation complete",defaultValue:"false",field:"clean"},
+    {name:"-save",alias:"-s",desc:"remove all download upon installation complete",argv:"location where binary is stored",defaultValue:"false",field:"save"},
     {name:"", desc:"list of asset to be installed", argv:["asset name to be deployed"],field:"argv"},
     {name:"-help",alias:"-h",desc:"Showing help"}
 ]
-argu["list"] = [
+allAction["list"] = [
     {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:["PST TToken"], defaultValue:process.env.ASTUTE_TOKEN,field:"token"},
     {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:["organization name"], defaultValue:"astute-industries",field:"owner"},
     {name:"-repo",alias:"-r", desc:"Asset repository",argv:["repository name"], defaultValue:"astute.rmf.sdks",field:"repo"},
@@ -56,7 +60,7 @@ argu["list"] = [
     {name:"-all",alias:"-a",desc:"show from all repo",field:"all", defaultValue:"false"},
     {name:"-help",alias:"-h",desc:"Showing help"}
 ]
-argu["help"] = []
+allAction["help"] = []
 
 const dict:{[key:string]:string} = {
     "astute.database":"astute.open.database|astute.ext.database",
@@ -71,116 +75,6 @@ function getRepo(prefix:string){
     return dict[key] || dict[""];
 }
 
-function getConfiguration(...argv:string[]):CONFIG|null{
-    var argvStart = 0;
-    var command:ValidCommand = "help"
-    switch((argv?.[0]||"").toLowerCase()){
-        case "list": argvStart = 1;command = "list";break;
-        case "install": argvStart = 1;command = "install";break;
-        default:
-            console.log("Astute Environment Setup");
-            console.log("npm exec setup -- [ "+ Object.keys(argu).join(" | ")+" ]" );
-            return null;
-    }
-    if(argvStart)argv=argv.slice(1);
-    const action = argu[command]||[];
-    const help  = action.filter(x=>x.alias==="-h")||[];
-    if(help.length){
-        if(argv[0]===help[0].name || (argv[0]||"")===help[0].alias){
-            console.log("Astute Environment Setup");
-            const arr = action.reduce((p,c)=>Math.max(10,c.name.length,(c.alias||"").length),0 )+4;
-            const withArgu = action.filter(x=>x.argv?.length && x.name.length);
-            const noArgu = action.filter(x=>!x.argv?.length);
-
-            const cmd1 = noArgu.map(a=>a.alias?`${a.name} | ${a.alias}`:a.name).join(" | ");
-            const cmd2 = withArgu.map(a=>"[ ( "+(a.alias?`${a.name} | ${a.alias}`:a.name)+")"+` ${a.name.substring(1)}.inst ]`).join(" | ");
-            const cmd3 = action.filter(x=>x.argv?.length && x.name==="")[0]
-            console.log("npm exec setup -- "+command + " [ "+ [cmd1,cmd2,...(cmd3?[`...inst`]:[])].join(" | ")+  " ]" );
-
-            action.forEach(x=>{
-                var keyy = ("  "+x.name);
-                if(x.name.length===0)return;
-                if(x.alias){
-                    console.log(keyy.padStart(arr)+" : "+(x.desc||"-"));
-                    keyy = x.alias.padStart(arr," ");
-                }
-                console.log(keyy.padStart(arr)+" : "+(x.desc||"-"));
-                if(x.argv?.length){
-                    const cmt = Array.isArray(x.argv)?x.argv[0]:x.argv;
-                    console.log(`${x.name.substring(1)}.inst`.padStart(arr)+" : "+cmt);
-                }
-                
-            })
-            if(cmd3){
-                console.log("  ...instance  : "+cmd3.desc||"-")
-            }
-                
-            return null;
-        }
-    }
-    argvStart = 0;
-
-    
-    var cfg:CONFIG = {
-        token:  "",
-        host:"https://api.github.com",
-        owner:"astute-industries",
-        repo:"astute.rmf.sdks",
-        tag:"development-build",
-        argv: argv,clean:false,all:false,
-        command
-    }
-    const lw = argv.map(x=>x.toLowerCase());
-    const err = (action.reduce((p:string[],c)=>{
-        if(c.field && !c.defaultValue && c.name.length){
-            const msg = lw.indexOf(c.name.toLowerCase())>=0 || (!!c.alias && lw.indexOf(c.alias.toLowerCase())>=0 );
-            if(!msg)p.push(c.name+ " is not provided");
-        }
-        return p;
-    },[]));
-    if(err.length){
-        err.forEach(x=>{
-            console.error(x);
-        })
-        process.exit(1);
-    }
-    
-    cfg = argv.reduce((p,c,i, all)=>{
-        var x =action.filter(k=>k.name.toLowerCase()===c.toLowerCase() || k.alias?.toLowerCase()===c.toLowerCase() )[0];
-        if(x===null || !x?.name?.length){
-            
-            return p;
-        }
-        argvStart = i+1;
-        
-        if(x.field==="clean" || x.field==="all"){
-            console.log("................",x.field);
-            p[x.field] = true;
-            return p;
-        }
-        var txt = all[i+1];
-        if(txt===undefined){
-            if(x.argv?.length){
-                throw Error("default value not found");
-            }
-            return p;
-        }
-        if(x.field==="argv" || x.field==="command" || x.field===undefined){
-            return p;
-        }
-        if(x.argv?.length)argvStart = i+2;
-        const m = x.field;
-
-        p[m]=txt;
-        return p;
-    },cfg);
-    var p = argv.slice(argvStart);
-    cfg.argv = p;
-    return cfg;
-
-}
-const config = getConfiguration(...argv);
-if(config===null)process.exit(0);
 function getAssetList(config:CONFIG,repo?:string):Promise<{[key:string]:ASSETINFO}>{
     const actualRepo = (repo||config.repo).split("|");
     if(actualRepo.length!==1){
@@ -229,20 +123,21 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
         accept:"application/octet-stream", "X-GitHub-Api-Version":"2022-11-28",
         'Authorization': `Bearer ${config.token}`,"content-type":"application/json"
     });
+    const temp = path.join(".","@"+randomUUID().toString());
     return new Promise<string>((res,rej)=>{
         fetch(meta.downLoad,{headers:h,method:"get"}).then(x=>{
             if(Math.floor(x.status/100)!==2)return rej("error downloading");
             console.log("SYTATUS",x.status)
             x.arrayBuffer().then(k=>{
                 if(!k?.byteLength)return rej("unable to download")
-                fs.mkdir("release",{recursive:true},()=>{
+                fs.mkdir(config.save || temp,{recursive:true},()=>{
                     console.log("installing ",meta.assetName);
                     if(meta.assetName.endsWith(".dev.tgz")){
                         meta.assetName = meta.assetName.substring(0,meta.assetName.length-8)+".tgz";
                     }
-                    fs.writeFile(path.join(".","release",meta.assetName),Buffer.from(k),(err)=>{
+                    fs.writeFile(path.join(config.save||temp,meta.assetName),Buffer.from(k),(err)=>{
                         err && rej(err);
-                        res(path.resolve(".","release",meta.assetName));
+                        res(path.join(config.save||temp,meta.assetName));
                     })
                 });
             }).catch(rej);
@@ -252,6 +147,7 @@ function getAsset(config:CONFIG,meta: ASSETINFO){
 
 function processArgv(config:CONFIG|null){
     if(config===null)return;
+    
     switch(config.command){
         case "list":return (config.all? Object.values(dict) : [config.repo]).map(x=>()=>new Promise<{[key:string]:ASSETINFO}>(res=>{
             getAssetList(config,x).then(resp=>{
@@ -300,32 +196,32 @@ function processArgv(config:CONFIG|null){
                     console.log(["?dev","?prod",...Object.keys(resp)].join(", "));
                     return;
                 }
-                const seq = rep.map(x=>()=>new Promise<string>(rr=>{
+                const seq = rep.map(x=>()=>new Promise<string|null>(rr=>{
                     getAsset(config,x[1]).then(lib=>{
-                        rr(lib);
+                        rr(lib?.length?(lib):null);
                     })
                 }))
                 seq.reduce((p:Promise<string[]>,c)=>new Promise((res,j)=>{
                     p.then((d)=>{
                         c().then(a=>{
-                            d.push(a);
+                            if(a!==null)d.push(a);
                             res(d);
                         }).catch(j); 
                     }).catch(j)
                 }),Promise.resolve([])).then((libs)=>{
                     libs.map(lib=>()=>new Promise<void>(res=>{
-                        spawnProcess([cmd("npm"),"install",lib]).finally(res);
+                        spawnProcess([cmd("npm"),"install",lib]).finally(()=>{
+                            if(config.save===null){
+                                return fs.rm(lib,()=>res());
+                            }
+                            res();
+                        });
                     })).reduce((p,c)=>new Promise<void>((x)=>{
                         p.finally(()=>{
                             c().finally(x);
                         })
                     }),Promise.resolve()).finally(()=>{
-                        if(config.clean){
-                            console.log("cleaning up")
-                            return fs.rm("./release",{recursive:true},()=>{
-                                console.log("installed");
-                            })
-                        }
+                        
                         console.log("installed");
                     });
                 })
@@ -334,7 +230,31 @@ function processArgv(config:CONFIG|null){
     }
 }
 try{
-    processArgv(getConfiguration(...argv));
+    const argv = process.argv.slice(2);
+    
+    const cmd = argv.splice(0,1)[0];
+    var aCommand = cmd ? VALID_COMMAND.reduce((p,c)=>{
+        if(cmd.toLowerCase()===c.toLowerCase())p=c;
+        return p;
+    },VALID_COMMAND[VALID_COMMAND.length-1]):null;
+    const defConfig:CONFIG ={
+        argv:argv,
+        command:aCommand||VALID_COMMAND[VALID_COMMAND.length-1],
+        host:"https://api.github.com",
+        owner: 'astute-industries',
+        repo: 'astute.rmf.sdks',
+        tag: 'development-build',
+        token:"",
+        save:"",
+        all:false
+    }
+    
+    const config = getConfiguration<ValidCommand,STR_PROPS,BOOL_PROPS,CONFIG>(aCommand,allAction,defConfig,...argv);
+    if(config===null)process.exit(0);
+    processArgv(config)?.finally(()=>{
+
+    })
+
 }catch(ex){
 
 }
