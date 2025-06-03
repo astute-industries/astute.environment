@@ -15,7 +15,7 @@ type ValidCommand = typeof VALID_COMMAND[number]
 
 
 const StrProps = ["token","host","owner","repo","tag" ,"save"] as const
-const BoolProps= ["all"] as const
+const BoolProps= ["all","download"] as const
 
 type STR_PROPS = typeof StrProps[number];
 type BOOL_PROPS= typeof BoolProps[number];
@@ -50,6 +50,7 @@ allAction["install"] =[
     {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:"deployment name", defaultValue:"development-build",field:"tag"},
     {name:"-save",alias:"-s",desc:"remove all download upon installation complete",argv:"location where binary is stored",defaultValue:"false",field:"save"},
     {name:"", desc:"list of asset to be installed", argv:["asset name to be deployed"],field:"argv"},
+    {name:"-download",alias:"-d",desc:"no install",field:"download", defaultValue:"false"},
     {name:"-help",alias:"-h",desc:"Showing help"}
 ]
 allAction["list"] = [
@@ -210,6 +211,7 @@ function processArgv(config:CONFIG|null){
                     }).catch(j)
                 }),Promise.resolve([])).then((libs)=>{
                     libs.map(lib=>()=>new Promise<void>(res=>{
+                        if(config.download)return res();
                         spawnProcess([cmd("npm"),"install","./"+lib]).finally(()=>{
                             if(config.save===null){
                                 return fs.rm(lib,()=>res());
