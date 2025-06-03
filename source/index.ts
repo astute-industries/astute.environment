@@ -248,7 +248,7 @@ try{
         tag: 'development-build',
         token:"",
         save:"",
-        all:false
+        all:false,download:false
     }
     
     const config = getConfiguration<ValidCommand,STR_PROPS,BOOL_PROPS,CONFIG>(aCommand,allAction,defConfig,...argv);
