@@ -49,9 +49,16 @@ export function getConfiguration<S extends string, STR extends string,BOOL exten
         console.log("npm exec setup -- [ "+ Object.keys(allCommand).join(" | ")+" ]" );
         return null;
     }
-
+    
     if(argvStart)argv=argv.slice(1);
     const action = allCommand[command]||[];
+    defaultConfig=action.reduce((p,c)=>{
+        if(!c.field && c.defaultValue)return p;
+        
+        (p as any)[c.field] = c.defaultValue;
+        return p;
+    },defaultConfig);
+    console.log(defaultConfig);
     const help  = action.filter(x=>x.alias==="-h")||[];
     if(help.length){
         if(argv[0]===help[0].name || (argv[0]||"")===help[0].alias){
@@ -90,9 +97,12 @@ export function getConfiguration<S extends string, STR extends string,BOOL exten
 
     const lw = argv.map(x=>x.toLowerCase());
     const err = (action.reduce((p:string[],c)=>{
-        if(c.field && !c.defaultValue && c.name.length){
+        if(c.type==="string" && c.field && !c.defaultValue && c.name.length){
             const msg = lw.indexOf(c.name.toLowerCase())>=0 || (!!c.alias && lw.indexOf(c.alias.toLowerCase())>=0 );
             if(!msg)p.push(c.name+ " is not provided");
+        }
+        if(c.type==="boolean"){
+            c.defaultValue=!!c.defaultValue;
         }
         return p;
     },[]));
@@ -129,7 +139,6 @@ export function getConfiguration<S extends string, STR extends string,BOOL exten
         }
         if(x.argv?.length)argvStart = i+2;
         const m = x.field;
-
         P[m]=txt;
         return p;
     },defaultConfig);

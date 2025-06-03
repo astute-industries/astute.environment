@@ -44,22 +44,22 @@ function cmd(c:string){
 var allAction:Partial<{[key in ValidCommand]: ARGUMENT<CONFIG>[]}>={};
 
 allAction["install"] =[
-    {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:"PST TToken", defaultValue:process.env.ASTUTE_TOKEN,field:"token" },
-    {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:"organization name", defaultValue:"astute-industries",field:"owner"},
-    {name:"-repo",alias:"-r", desc:"Asset repository",argv:"repository name", defaultValue:"astute.rmf.sdks",field:"repo"},
-    {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:"deployment name", defaultValue:"development-build",field:"tag"},
-    {name:"-save",alias:"-s",desc:"remove all download upon installation complete",argv:"location where binary is stored",defaultValue:"false",field:"save"},
-    {name:"", desc:"list of asset to be installed", argv:["asset name to be deployed"],field:"argv"},
-    {name:"-download",alias:"-d",desc:"no install",field:"download", defaultValue:"false"},
-    {name:"-help",alias:"-h",desc:"Showing help"}
+    {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:"PST TToken", defaultValue:process.env.ASTUTE_TOKEN,field:"token",type:"string" },
+    {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:"organization name", defaultValue:"astute-industries",field:"owner",type:"string"},
+    {name:"-repo",alias:"-r", desc:"Asset repository",argv:"repository name", defaultValue:"astute.rmf.sdks",field:"repo",type:"string"},
+    {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:"deployment name", defaultValue:"development-build",field:"tag",type:"string"},
+    {name:"-save",alias:"-s",desc:"remove all download upon installation complete",argv:"location where binary is stored",field:"save",type:"boolean"},
+    {name:"", desc:"list of asset to be installed", argv:["asset name to be deployed"],field:"argv",type:"string"},
+    {name:"-download",alias:"-d",desc:"no install",field:"download",type:"boolean"},
+    {name:"-help",alias:"-h",desc:"Showing help",type:"boolean"}
 ]
 allAction["list"] = [
-    {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:["PST TToken"], defaultValue:process.env.ASTUTE_TOKEN,field:"token"},
-    {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:["organization name"], defaultValue:"astute-industries",field:"owner"},
-    {name:"-repo",alias:"-r", desc:"Asset repository",argv:["repository name"], defaultValue:"astute.rmf.sdks",field:"repo"},
-    {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:["deployment name"], defaultValue:"development-build",field:"tag"},
-    {name:"-all",alias:"-a",desc:"show from all repo",field:"all", defaultValue:"false"},
-    {name:"-help",alias:"-h",desc:"Showing help"}
+    {name:"-token",alias:"-t", desc:"Github Personal acess token",argv:["PST TToken"], defaultValue:process.env.ASTUTE_TOKEN,field:"token",type:"string"},
+    {name:"-owner",alias:"-o", desc:"Asset repository's organization",argv:["organization name"], defaultValue:"astute-industries",field:"owner",type:"string"},
+    {name:"-repo",alias:"-r", desc:"Asset repository",argv:["repository name"], defaultValue:"astute.rmf.sdks",field:"repo",type:"string"},
+    {name:"-tag",alias:"-t", desc:"Asset Deployment name",argv:["deployment name"], defaultValue:"development-build",field:"tag",type:"string"},
+    {name:"-all",alias:"-a",desc:"show from all repo",field:"all",type:"string"},
+    {name:"-help",alias:"-h",desc:"Showing help",type:"boolean"}
 ]
 allAction["help"] = []
 
@@ -115,6 +115,9 @@ function getAssetList(config:CONFIG,repo?:string):Promise<{[key:string]:ASSETINF
                 },{});
                 res(t);
             });
+        }).catch((ex)=>{
+            console.error("unable to get asset");
+            rej(ex);
         });
     });
 }

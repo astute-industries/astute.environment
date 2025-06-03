@@ -19,9 +19,9 @@ interface CONFIG extends BASE_CONFIG<ValidCommand,STR_PROP,BOOL_PROP>{}
 const allAction:Partial<{[key in ValidCommand]: ARGUMENT<CONFIG>[]}>={};
 
 allAction["compile"] = [
-    {name:"-output",alias:"-o", desc:"Release folder",argv:"release folder", defaultValue:"../release",field:"output"},
-    {name:"-source",alias:"-s", desc:"Asset repository", defaultValue:"astute.rmf.sdks",field:"source"},
-    {name:"-help",alias:"-h",desc:"Showing help"}
+    {name:"-output",alias:"-o", desc:"Release folder",argv:"release folder", defaultValue:"../release",field:"output",type:"string"},
+    {name:"-source",alias:"-s", desc:"Asset repository", defaultValue:"astute.rmf.sdks",field:"source",type:"string"},
+    {name:"-help",alias:"-h",desc:"Showing help",type:"boolean"}
 ]
 allAction["help"] = []
 
