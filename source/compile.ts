@@ -69,13 +69,13 @@ function compile(temp:string, currentPkg:PACKAGE){
     console.log("NC",temp)
     currentPkg.dependencies =  Object.entries(currentPkg.dependencies||{}).reduce((p,c)=>{
         if(c[1].startsWith("file:../")){
-            p[c[0]]="file:release/"+c[1].substring(8).toLowerCase()+".tgz";
+            p[c[0]]="file:./"+c[1].substring(8).toLowerCase()+".tgz";
         }
         return p;
     },currentPkg.dependencies||{});
     currentPkg.peerDependencies =  Object.entries(currentPkg.peerDependencies||{}).reduce((p,c)=>{
         if(c[1].startsWith("file:../")){
-            p[c[0]]="file:release/"+c[1].substring(8).toLowerCase()+".tgz";
+            p[c[0]]="file:./"+c[1].substring(8).toLowerCase()+".tgz";
         }
         return p;
     },currentPkg.peerDependencies||{});
