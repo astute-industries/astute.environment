@@ -72,7 +72,7 @@ function compile(temp:string, currentPkg:PACKAGE){
             p[c[0]]="file:./"+c[1].substring(8).toLowerCase()+".tgz";
         }
          if(c[1].startsWith("file:release/")){
-            p[c[0]]="file:./"+c[1].substring(13).toLowerCase()+".tgz";
+            p[c[0]]="file:./"+c[1].substring(13).toLowerCase();
         }
         return p;
     },currentPkg.dependencies||{});
