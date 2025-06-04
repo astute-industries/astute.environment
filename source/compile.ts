@@ -71,14 +71,11 @@ function compile(temp:string, currentPkg:PACKAGE){
         if(c[1].startsWith("file:../")){
             p[c[0]]="file:./"+c[1].substring(8).toLowerCase()+".tgz";
         }
-        return p;
-    },currentPkg.dependencies||{});
-    currentPkg.peerDependencies =  Object.entries(currentPkg.peerDependencies||{}).reduce((p,c)=>{
-        if(c[1].startsWith("file:../")){
-            p[c[0]]="file:./"+c[1].substring(8).toLowerCase()+".tgz";
+         if(c[1].startsWith("file:release/")){
+            p[c[0]]="file:./"+c[1].substring(13).toLowerCase()+".tgz";
         }
         return p;
-    },currentPkg.peerDependencies||{});
+    },currentPkg.dependencies||{});
     const fn = currentPkg.name+"-"+currentPkg.version;
     return new Promise<void>(Res=>{
         fs.mkdir(BASE,()=>{
