@@ -4,6 +4,10 @@ import path from "path"
 import fs from "fs";
 import { ARGUMENT, BASE_CONFIG } from "./definition";
 
+export function calling(cmd:string){
+    return os.platform()==="win32"?cmd+".cmd":cmd;
+}
+
 export function spawnProcess(command:string[], config?:{cwd?:string}){
     return new Promise<number>((res)=>{
         const action = command.splice(0,1);

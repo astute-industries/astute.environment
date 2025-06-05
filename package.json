@@ -19,7 +19,8 @@
   "bin": {
     "setup": "./target/index.js",
     "compile":"./target/compile.js",
-    "parallel":"./target/projCli.js"
+    "parallel":"./target/projCli.js",
+    "project":"./target/create.js"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.12"
