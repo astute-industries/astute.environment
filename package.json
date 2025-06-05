@@ -20,7 +20,7 @@
     "setup": "./target/index.js",
     "compile":"./target/compile.js",
     "parallel":"./target/projCli.js",
-    "proj":"./target/proj.js"
+    "mkproj":"./target/new_project.js"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.12"
