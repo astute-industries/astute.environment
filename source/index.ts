@@ -7,6 +7,7 @@ import os from "os"
 import { spawnProcess, getConfiguration } from "./utility";
 import { ARGUMENT, BASE_CONFIG } from "./definition";
 import { randomUUID } from "crypto";
+import tar from "tar-stream"
 
 const VALID_COMMAND = ["install","list","help"] as const;
 type ValidCommand = typeof VALID_COMMAND[number]
@@ -216,10 +217,32 @@ function processArgv(config:CONFIG|null){
                     libs.map(lib=>()=>new Promise<void>(res=>{
                         if(config.download)return res();
                         spawnProcess([cmd("npm"),"install","--save-dev",  "./"+lib]).finally(()=>{
-                            if(config.save===null){
-                                return fs.rm(lib,()=>res());
-                            }
-                            res();
+                            var extract = tar.extract();
+                            let dumJsonContent = '';
+                            extract.on('entry', (header, stream, next) => {
+                                if (header.name === 'release/package.json') {
+                                    stream.on('data', (chunk) => {
+                                        dumJsonContent += chunk.toString();
+                                    });
+
+                                    stream.on('end', () => {
+                                        console.log('dum.json content:', JSON.parse(dumJsonContent));
+                                        next();
+                                    });
+                                } else {
+                                    stream.resume();
+                                    stream.on('end', next);
+                                }
+                            });
+
+                            extract.on('finish', () => {
+                                console.log(dumJsonContent);
+                                if(config.save===null){
+                                    return fs.rm(lib,()=>res());
+                                }
+                                res();
+                            });
+                            
                         });
                     })).reduce((p,c)=>new Promise<void>((x)=>{
                         p.finally(()=>{
