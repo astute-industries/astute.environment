@@ -215,7 +215,7 @@ function processArgv(config:CONFIG|null){
                 }),Promise.resolve([])).then((libs)=>{
                     libs.map(lib=>()=>new Promise<void>(res=>{
                         if(config.download)return res();
-                        spawnProcess([cmd("npm"),"install","./"+lib]).finally(()=>{
+                        spawnProcess([cmd("npm"),"install","--save-dev",  "./"+lib]).finally(()=>{
                             if(config.save===null){
                                 return fs.rm(lib,()=>res());
                             }
