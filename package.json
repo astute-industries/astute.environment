@@ -15,7 +15,8 @@
   "description": "",
   "dependencies": {
     "node-fetch": "^2.7.0",
-    "tar-stream": "^3.1.7"
+    "tar-stream": "^3.1.7",
+    "zlib": "^1.0.5"
   },
   "bin": {
     "setup": "./target/index.js",

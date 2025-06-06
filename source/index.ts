@@ -8,6 +8,7 @@ import { spawnProcess, getConfiguration } from "./utility";
 import { ARGUMENT, BASE_CONFIG } from "./definition";
 import { randomUUID } from "crypto";
 import tar from "tar-stream"
+import zlib from "zlib"
 
 const VALID_COMMAND = ["install","list","help"] as const;
 type ValidCommand = typeof VALID_COMMAND[number]
@@ -242,7 +243,7 @@ function processArgv(config:CONFIG|null){
                                 }
                                 res();
                             });
-                            
+                            fs.createReadStream("./"+lib).pipe(zlib.createGunzip()).pipe(extract);
                         });
                     })).reduce((p,c)=>new Promise<void>((x)=>{
                         p.finally(()=>{
