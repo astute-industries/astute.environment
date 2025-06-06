@@ -221,7 +221,7 @@ function processArgv(config:CONFIG|null){
                             var extract = tar.extract();
                             let dumJsonContent = '';
                             extract.on('entry', (header, stream, next) => {
-                                if (header.name === 'release/package.json') {
+                                if (header.name === 'package/package.json') {
                                     stream.on('data', (chunk) => {
                                         dumJsonContent += chunk.toString();
                                     });
@@ -247,9 +247,9 @@ function processArgv(config:CONFIG|null){
                             });
                             fs.createReadStream("./"+lib).pipe(zlib.createGunzip()).pipe(extract);
                         });
-                    })).reduce((p,c)=>new Promise<{[key:string]:string}>((x)=>{
-                        p.then(()=>{
-                            c().then(a=>Object.assign(x,a));
+                    })).reduce((p,c)=>new Promise<{[key:string]:string}>(res=>{
+                        p.then((x)=>{
+                            c().then(a=>res(Object.assign(x,a)));
                         })
                     }),Promise.resolve({})).then((q)=>{
                         spawnProcess([cmd("npm"),"install","--save-dev",  ...Object.keys(q) ]).finally(()=>{
