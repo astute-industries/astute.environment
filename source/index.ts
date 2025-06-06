@@ -215,8 +215,8 @@ function processArgv(config:CONFIG|null){
                         }).catch(j); 
                     }).catch(j)
                 }),Promise.resolve([])).then((libs)=>{
-                    libs.map(lib=>()=>new Promise<void>(res=>{
-                        if(config.download)return res();
+                    libs.map(lib=>()=>new Promise<{[key:string]:string}>(res=>{
+                        if(config.download)return res({});
                         spawnProcess([cmd("npm"),"install","--save-dev",  "./"+lib]).finally(()=>{
                             var extract = tar.extract();
                             let dumJsonContent = '';
@@ -237,21 +237,24 @@ function processArgv(config:CONFIG|null){
                             });
 
                             extract.on('finish', () => {
-                                console.log(dumJsonContent);
+                                const x = JSON.parse(dumJsonContent)
+                                console.log(x.devDependencies);
+                                
                                 if(config.save===null){
-                                    return fs.rm(lib,()=>res());
+                                    return fs.rm(lib,()=>res(x.devDependencies));
                                 }
-                                res();
+                                res(x.devDependencies);
                             });
                             fs.createReadStream("./"+lib).pipe(zlib.createGunzip()).pipe(extract);
                         });
-                    })).reduce((p,c)=>new Promise<void>((x)=>{
-                        p.finally(()=>{
-                            c().finally(x);
+                    })).reduce((p,c)=>new Promise<{[key:string]:string}>((x)=>{
+                        p.then(()=>{
+                            c().then(a=>Object.assign(x,a));
                         })
-                    }),Promise.resolve()).finally(()=>{
-                        
-                        console.log("installed");
+                    }),Promise.resolve({})).then((q)=>{
+                        spawnProcess([cmd("npm"),"install","--save-dev",  ...Object.keys(q) ]).finally(()=>{
+                            console.log("installed");
+                        })
                     });
                 })
             });
